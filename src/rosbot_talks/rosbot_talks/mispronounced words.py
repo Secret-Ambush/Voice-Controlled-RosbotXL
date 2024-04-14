@@ -1,29 +1,38 @@
-from openai import OpenAI
+import openai
 import os
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
+
+# Load API key from environment variable
 api_key = os.getenv("API_KEY")
+if not api_key:
+    raise ValueError("API_KEY environment variable not set.")
 
-client = OpenAI(api_key)
+# Set the API key for the OpenAI client
+openai.api_key = api_key
 
-def interpret_command_with_chatgpt(command, openai_api_key):
+def interpret_command_with_chatgpt(command):
     try:
         prompt_text = f"Interpret this command into a standardized navigation format: '{command}'. Include direction and distance (default to 0cm if unspecified)."
 
-        response = client.completions.create(engine="text-davinci-003",
-        prompt=prompt_text,
-        temperature=0.5, 
-        max_tokens=50,
-        top_p=1,
-        frequency_penalty=0,
-        presence_penalty=0)
+        response = openai.ChatCompletion.create(
+            model="gpt-3.5-turbo",
+            messages=[
+                {"role": "system", "content": "You are a helpful assistant."},
+                {"role": "user", "content": prompt_text}
+            ]
+        )
 
         # Process and return the response text
-        return response.choices[0].text.strip()
+        return response['choices'][0]['message']['content'].strip()
     except Exception as e:
         print(f"An error occurred: {e}")
         return "Error processing command"
 
 sample_command = "Move strait ahead by ten centimeters"
-print(interpret_command_with_chatgpt(sample_command, api_key))
+print(interpret_command_with_chatgpt(sample_command))
 
 
 '''
