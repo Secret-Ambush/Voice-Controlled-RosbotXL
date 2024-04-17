@@ -15,7 +15,10 @@ openai.api_key = api_key
 
 def interpret_command_with_chatgpt(command):
     try:
-        prompt_text = f"Interpret this command into a standardized navigation format: '{command}'. Include direction and distance (default to 0cm if unspecified)."
+        prompt_text = f"""Please convert {command} into a standardized navigation format by indicating the direction and distance. If no distance involved, 0cm.
+        Your outputted direction should be limited to straight, left, right, or stop. 
+        Your response should ONLY be (direction by distance).
+        """
 
         response = openai.ChatCompletion.create(
             model="gpt-3.5-turbo",
@@ -31,7 +34,8 @@ def interpret_command_with_chatgpt(command):
         print(f"An error occurred: {e}")
         return "Error processing command"
 
-sample_command = "Move strait ahead by ten centimeters"
+sample_command = "Hi bot! I was wondering if you can move clockwise 45 degrees and move 20 centimeters"
+print(sample_command)
 print(interpret_command_with_chatgpt(sample_command))
 
 
