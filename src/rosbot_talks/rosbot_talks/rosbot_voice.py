@@ -38,8 +38,7 @@ class AudioPlayer:
             print("Cannot play the audio:", e)
         finally:
             pygame.mixer.quit()
-            pygame.quit()
-            
+            pygame.quit()            
 class SpeechToTextNode(Node):
     def __init__(self):
         super().__init__('speech_to_text_node')
@@ -118,7 +117,6 @@ class SpeechToTextNode(Node):
         
         response = completion.choices[0].message.content
         AudioPlayer.play_sound(response)
-
 class VoiceCommandProcessor(Node):
     def __init__(self):
         super().__init__('voice_command_processor')
@@ -161,7 +159,6 @@ class VoiceCommandProcessor(Node):
         self.motion_command.linear.x = 0.0
         self.motion_command.angular.z = 0.0
         self.motion_publisher.publish(self.motion_command)
-
 class TurnRobot(Node):
     def __init__(self):
         super().__init__('turn_robot')
@@ -213,6 +210,5 @@ def main(args=None):
     node.destroy_node()
     rclpy.shutdown()
     
-
 if __name__ == '__main__':
     main()
