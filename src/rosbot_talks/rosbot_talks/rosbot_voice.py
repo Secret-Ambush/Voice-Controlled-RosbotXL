@@ -10,7 +10,6 @@ from elevenlabs import voices, generate
 import openai
 import speech_recognition as sr
 import math
-import pygame
 import io
 from dotenv import load_dotenv
 import os
