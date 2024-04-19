@@ -2,15 +2,12 @@ import openai
 import os
 from dotenv import load_dotenv
 
-# Load environment variables from .env file
 load_dotenv()
 
-# Load API key from environment variable
 api_key = os.getenv("API_KEY")
 if not api_key:
     raise ValueError("API_KEY environment variable not set.")
 
-# Set the API key for the OpenAI client
 openai.api_key = api_key
 
 def interpret_command_with_chatgpt(command):
@@ -28,7 +25,6 @@ def interpret_command_with_chatgpt(command):
             ]
         )
 
-        # Process and return the response text
         return response['choices'][0]['message']['content'].strip()
     except Exception as e:
         print(f"An error occurred: {e}")
