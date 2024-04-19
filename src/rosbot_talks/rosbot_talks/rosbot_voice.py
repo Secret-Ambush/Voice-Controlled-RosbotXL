@@ -26,19 +26,6 @@ class AudioPlayer:
         self.voice = voice
         pygame.init()
         pygame.mixer.init()
-
-    def createtext(prompting):
-        completion = openai.chat.completions.create(
-        model="gpt-3.5-turbo",
-        messages=[
-            {"role": "system", "content": "You are a bot."},
-            {"role": "user", "content": prompting}
-            ]
-        )
-        
-        response = completion.choices[0].message.content
-        print(response)
-        AudioPlayer.play_sound(response)
     
     def play_sound(self, text):
         audio = generate(text, voice=self.voice)
@@ -75,26 +62,11 @@ class SpeechToTextNode(Node):
                 ]
             )
 
-            # Process and return the response text
             return response['choices'][0]['message']['content'].strip()
+
         except Exception as e:
             print(f"An error occurred: {e}")
             return "Error processing command"
-        
-    def playsound(text):
-        audio = generate(text, voice="Bella")
-        pygame.init()
-        pygame.mixer.init()
-        try:
-            sound = pygame.mixer.Sound(io.BytesIO(audio))
-            sound.play()
-            while pygame.mixer.get_busy():
-                pygame.time.Clock().tick(10)
-        except pygame.error as e:
-            print("Cannot play the audio")
-        finally:
-            pygame.mixer.quit()
-            pygame.quit()
             
     def speech_to_text_callback(self):
         if self.flag:
@@ -145,7 +117,7 @@ class SpeechToTextNode(Node):
         )
         
         response = completion.choices[0].message.content
-        self.playsound(response)
+        AudioPlayer.play_sound(response)
 
 class VoiceCommandProcessor(Node):
     def __init__(self):
