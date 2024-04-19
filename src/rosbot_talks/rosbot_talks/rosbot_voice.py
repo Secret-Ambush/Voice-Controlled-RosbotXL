@@ -59,7 +59,43 @@ class SpeechToTextNode(Node):
         self.text_publisher = self.create_publisher(String, 'recognized_text', 10)
         self.flag = True
         self.speech_to_text_callback()
+    
+    def interpret_command_with_chatgpt(command):
+        try:
+            prompt_text = f"""Please convert {command} into a standardized navigation format by indicating the direction and distance. If no distance involved, 0cm.
+            Your outputted direction should ONLY be limited to straight, left, right, or stop. 
+            Your response should ONLY be (direction by distance).
+            """
+
+            response = openai.ChatCompletion.create(
+                model="gpt-3.5-turbo",
+                messages=[
+                    {"role": "system", "content": "You are a helpful assistant."},
+                    {"role": "user", "content": prompt_text}
+                ]
+            )
+
+            # Process and return the response text
+            return response['choices'][0]['message']['content'].strip()
+        except Exception as e:
+            print(f"An error occurred: {e}")
+            return "Error processing command"
         
+    def playsound(text):
+        audio = generate(text, voice="Bella")
+        pygame.init()
+        pygame.mixer.init()
+        try:
+            sound = pygame.mixer.Sound(io.BytesIO(audio))
+            sound.play()
+            while pygame.mixer.get_busy():
+                pygame.time.Clock().tick(10)
+        except pygame.error as e:
+            print("Cannot play the audio")
+        finally:
+            pygame.mixer.quit()
+            pygame.quit()
+            
     def speech_to_text_callback(self):
         if self.flag:
             self.createtext("Generate a short simple salutation eager for the human to direct you")
@@ -91,16 +127,25 @@ class SpeechToTextNode(Node):
             # If no text with numeric digits found, select the first one
             if selected_text == '' and alternative_list:
                 selected_text = alternative_list[0].get('transcript', '')
-        
+
+            selected_text = self.interpret_command_with_chatgpt(selected_text)
             self.get_logger().info("Selected Text: " + selected_text)
             self.text_publisher.publish(String(data=selected_text))
         
         except Exception as e:
             self.get_logger().error('Failed to recognize speech: ' + str(e))
 
-    def createtext(self, command):
-        # Placeholder for actual text generation functionality
-        self.get_logger().info(command)
+    def createtext(self, prompting):
+        completion = openai.chat.completions.create(
+        model="gpt-3.5-turbo",
+        messages=[
+            {"role": "system", "content": "You are a bot."},
+            {"role": "user", "content": prompting}
+            ]
+        )
+        
+        response = completion.choices[0].message.content
+        self.playsound(response)
 
 class VoiceCommandProcessor(Node):
     def __init__(self):
@@ -173,22 +218,18 @@ class TurnRobot(Node):
         # Convert distance from cm to meters
         distance_m = distance_cm / 100.0
         
-        # Create a Twist message for linear movement
         motion_command = Twist()
         motion_command.linear.x = linear_velocity
         
-        # Calculate duration in seconds to move the required distance
         move_duration_sec = abs(distance_m / linear_velocity)
         
         self.get_logger().info(f"Moving forward {distance_cm} cm")
         
-        # Start moving
         end_time = self.get_clock().now() + Duration(seconds=move_duration_sec)
         while self.get_clock().now() < end_time:
             self.motion_publisher.publish(motion_command)
             rclpy.spin_once(self, timeout_sec=0.1)
         
-        # Stop the robot after moving the distance
         motion_command.linear.x = 0.0
         self.motion_publisher.publish(motion_command)
         self.get_logger().info("Movement complete.")
