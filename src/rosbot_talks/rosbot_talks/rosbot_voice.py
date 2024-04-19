@@ -233,7 +233,7 @@ class TurnRobot(Node):
         motion_command.linear.x = 0.0
         self.motion_publisher.publish(motion_command)
         self.get_logger().info("Movement complete.")
-        
+       
 def main(args=None):
     rclpy.init(args=args)
     node = SpeechToTextNode()
