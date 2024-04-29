@@ -78,11 +78,6 @@ class SpeechToTextNode(Node):
             return "Error processing command"
             
     def speech_to_text_callback(self):
-        if self.flag:
-            self.createtext("Generate a short simple salutation eager for the human to direct you")
-        else:
-            self.createtext("Generate one very short informal sentence to show that you are ready to listen")
-        
         parser = argparse.ArgumentParser()
         parser.add_argument("--model", default="medium", help="Model to use",
                             choices=["tiny", "base", "small", "medium", "large"])
@@ -122,6 +117,42 @@ class SpeechToTextNode(Node):
         recorder.listen_in_background(source, record_callback, phrase_time_limit=record_timeout)
         
         print("Model loaded. Ready! \n")
+        
+        if self.flag:
+            self.createtext("Generate a short simple salutation eager for the human to direct you")
+        else:
+            self.createtext("Generate one very short informal sentence to show that you are ready to listen")
+        
+        
+        start_time = datetime.now()
+        while (datetime.now() - start_time) < timedelta(seconds=3):
+            try:
+                if not data_queue.empty():
+                    phrase_complete = False
+                    now = datetime.now()
+                    
+                    if phrase_time and now - phrase_time > timedelta(seconds=phrase_timeout):
+                        phrase_complete = True
+
+                    phrase_time = now
+
+                    # Combine audio data from queue.
+                    audio_data = b''.join(data_queue.queue)
+                    data_queue.queue.clear()
+
+                    # Process audio data.
+                    audio_np = np.frombuffer(audio_data, dtype=np.int16).astype(np.float32) / 32768.0
+                    result = audio_model.transcribe(audio_np, fp16=torch.cuda.is_available())
+                    text = result['text'].strip()                        
+                    print(text)
+
+                sleep(0.25)
+
+            except KeyboardInterrupt:
+                break
+        selected_text = self.interpret_command_with_chatgpt(text)
+        self.get_logger().info("Selected Text: " + selected_text)
+        self.text_publisher.publish(String(data=selected_text))
 
     def createtext(self, prompting):
         completion = openai.chat.completions.create(
