@@ -20,6 +20,8 @@ api_key2 = os.getenv("API_KEY_Eleven")
 elevenlabs.set_api_key(api_key2)
 
 flag = True
+motion_publisher = None  
+text_publisher = None  
 
 
 class AudioPlayer:
@@ -42,8 +44,9 @@ class AudioPlayer:
             pygame.quit()            
 class SpeechToTextNode(Node):
     def __init__(self):
+        global text_publisher
         super().__init__('speech_to_text_node')
-        self.text_publisher = self.create_publisher(String, 'recognized_text', 10)
+        text_publisher = self.Publisher('/recognized_text', String, queue_size=1)
         self.speech_to_text_callback()
     
     def interpret_command_with_chatgpt(command):
@@ -102,6 +105,7 @@ class SpeechToTextNode(Node):
             selected_text = self.interpret_command_with_chatgpt(selected_text)
             self.get_logger().info("Selected Text: " + selected_text)
             self.text_publisher.publish(String(data=selected_text))
+            node2 = VoiceCommandProcessor()
         
         except Exception as e:
             self.get_logger().error('Failed to recognize speech: ' + str(e))
@@ -159,16 +163,19 @@ class VoiceCommandProcessor(Node):
             SpeechToTextNode.speech_to_text_callback()
 
     def stop_robot(self):
+        global motion_publisher
         self.get_logger().info("Stopping robot")
         self.motion_command.linear.x = 0.0
         self.motion_command.angular.z = 0.0
-        self.motion_publisher.publish(self.motion_command)
+        motion_publisher.publish(self.motion_command)
 class TurnRobot(Node):
     def __init__(self):
+        global motion_publisher
         super().__init__('turn_robot')
-        self.motion_publisher = self.create_publisher(Twist, 'cmd_vel', 10)
+        motion_publisher = self.create_publisher(Twist, 'cmd_vel', 10)
         
     def turn_by_angle(self, angle_degrees, angular_velocity):
+        global motion_publisher
         angle_radians = math.radians(angle_degrees)
         
         motion_command = Twist()
@@ -180,14 +187,15 @@ class TurnRobot(Node):
         
         end_time = self.get_clock().now() + Duration(seconds=turn_duration_sec)
         while self.get_clock().now() < end_time:
-            self.motion_publisher.publish(motion_command)
+            motion_publisher.publish(motion_command)
             rclpy.spin_once(self, timeout_sec=0.1)
         
         motion_command.angular.z = 0.0
-        self.motion_publisher.publish(motion_command)
+        motion_publisher.publish(motion_command)
         self.get_logger().info("Turn complete.")
 
     def move_linear(self, distance_cm, linear_velocity):
+        global motion_publisher
         # Convert distance from cm to meters
         distance_m = distance_cm / 100.0
         
@@ -200,11 +208,11 @@ class TurnRobot(Node):
         
         end_time = self.get_clock().now() + Duration(seconds=move_duration_sec)
         while self.get_clock().now() < end_time:
-            self.motion_publisher.publish(motion_command)
+            motion_publisher.publish(motion_command)
             rclpy.spin_once(self, timeout_sec=0.1)
         
         motion_command.linear.x = 0.0
-        self.motion_publisher.publish(motion_command)
+        motion_publisher.publish(motion_command)
         self.get_logger().info("Movement complete.")
        
 def main(args=None):

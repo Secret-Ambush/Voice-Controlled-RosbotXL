@@ -28,6 +28,7 @@ load_dotenv()
 api_key = os.getenv("API_KEY")
 api_key2 = os.getenv("API_KEY_Eleven")
 elevenlabs.set_api_key(api_key2)
+flag = True
 
 
 class AudioPlayer:
@@ -53,7 +54,6 @@ class SpeechToTextNode(Node):
     def __init__(self):
         super().__init__('speech_to_text_node')
         self.text_publisher = self.create_publisher(String, 'recognized_text', 10)
-        self.flag = True
         self.speech_to_text_callback()
     
     def interpret_command_with_chatgpt(command):
@@ -118,12 +118,12 @@ class SpeechToTextNode(Node):
         
         print("Model loaded. Ready! \n")
         
-        if self.flag:
+        if flag:
             self.createtext("Generate a short simple salutation eager for the human to direct you")
         else:
             self.createtext("Generate one very short informal sentence to show that you are ready to listen")
         
-        
+        flag = False
         start_time = datetime.now()
         while (datetime.now() - start_time) < timedelta(seconds=3):
             try:
