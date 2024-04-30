@@ -19,6 +19,8 @@ api_key = os.getenv("API_KEY")
 api_key2 = os.getenv("API_KEY_Eleven")
 elevenlabs.set_api_key(api_key2)
 
+flag = True
+
 
 class AudioPlayer:
     def __init__(self, voice="Bella"):
@@ -42,7 +44,6 @@ class SpeechToTextNode(Node):
     def __init__(self):
         super().__init__('speech_to_text_node')
         self.text_publisher = self.create_publisher(String, 'recognized_text', 10)
-        self.flag = True
         self.speech_to_text_callback()
     
     def interpret_command_with_chatgpt(command):
@@ -67,12 +68,12 @@ class SpeechToTextNode(Node):
             return "Error processing command"
             
     def speech_to_text_callback(self):
-        if self.flag:
+        if flag:
             self.createtext("Generate a short simple salutation eager for the human to direct you")
         else:
             self.createtext("Generate one very short informal sentence to show that you are ready to listen")
         
-        self.flag = False
+        flag = False
         recognizer = sr.Recognizer()
         
         try:
@@ -136,22 +137,26 @@ class VoiceCommandProcessor(Node):
         if "left" in text:
             self.get_logger().info("Command: Left")
             TurnRobot.turn_by_angle(45, 0.5)
-            TurnRobot.move_linear(distance_to_travel, 0.2)  
+            TurnRobot.move_linear(distance_to_travel, 0.2)
+            SpeechToTextNode.speech_to_text_callback() 
             
         if "right" in text:
             self.get_logger().info("Command: Right")
             TurnRobot.turn_by_angle(-45, 0.5)
             TurnRobot.move_linear(distance_to_travel, 0.2)
+            SpeechToTextNode.speech_to_text_callback()
         
         elif "straight" in text:
             self.get_logger().info("Command: Right")
             SpeechToTextNode.createtext("Generate a simple sentence to say that you are moving straight")
             TurnRobot.move_linear(distance_to_travel, 0.2)
+            SpeechToTextNode.speech_to_text_callback()
         
         elif "stop" in text:
             SpeechToTextNode.createtext("Generate a simple sentence to say that you stopped")
             self.get_logger().info("Command: Stop") 
             VoiceCommandProcessor.stop_robot()
+            SpeechToTextNode.speech_to_text_callback()
 
     def stop_robot(self):
         self.get_logger().info("Stopping robot")
