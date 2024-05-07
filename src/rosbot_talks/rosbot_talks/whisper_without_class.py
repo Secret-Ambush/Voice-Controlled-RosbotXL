@@ -14,6 +14,13 @@ import io
 from dotenv import load_dotenv
 import os
 from rclpy.qos import QoSProfile
+import argparse
+from queue import Queue
+import whisper
+from time import sleep
+from datetime import datetime, timedelta
+import numpy as np
+import torch
 
 # Load environment variables
 load_dotenv()
@@ -27,6 +34,7 @@ flag = True
 motion_publisher = None
 text_publisher = None
 node = None
+
 
 def play_sound(text, voice="Bella"):
     pygame.init()
@@ -67,45 +75,84 @@ def interpret_command_with_chatgpt(command):
 
 def speech_to_text_callback():
     global flag, text_publisher
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--model", default="medium", help="Model to use",
+                        choices=["tiny", "base", "small", "medium", "large"])
+    parser.add_argument("--energy_threshold", default=1000,
+                        help="Energy level for mic to detect.", type=int)
+    parser.add_argument("--record_timeout", default=2,
+                        help="How real time the recording is in seconds.", type=float)
+    parser.add_argument("--phrase_timeout", default=3,
+                        help="How much empty space between recordings before we "
+                            "consider it a new line in the transcription.", type=float)
+    args = parser.parse_args()
+    
+    phrase_time = None
+    data_queue = Queue()
+    recorder = sr.Recognizer()
+    recorder.energy_threshold = args.energy_threshold
+    recorder.dynamic_energy_threshold = False
+    source = sr.Microphone(sample_rate=16000)
+    
+    
+    model = args.model
+    if args.model != "large":
+        model = model + ".en"
+    audio_model = whisper.load_model(model)
+
+    record_timeout = args.record_timeout
+    phrase_timeout = args.phrase_timeout
+
+    transcription = ['']
+
+    with source:
+        recorder.adjust_for_ambient_noise(source)
+        
+    def record_callback(_, audio:sr.AudioData) -> None:
+        data = audio.get_raw_data()
+        data_queue.put(data)
+    recorder.listen_in_background(source, record_callback, phrase_time_limit=record_timeout)
+    
+    print("Model loaded. Ready! \n")
+
     if flag:
         create_text("Generate a short simple salutation eager for the human to direct you")
     else:
-        create_text("Generate one sentence to show that you are ready to listen for next direction")
-
+        create_text("Generate one very short informal sentence to show that you are ready to listen")
+    
     flag = False
-    recognizer = sr.Recognizer()
+    start_time = datetime.now()
+    while (datetime.now() - start_time) < timedelta(seconds=3):
+        try:
+            if not data_queue.empty():
+                phrase_complete = False
+                now = datetime.now()
+                
+                if phrase_time and now - phrase_time > timedelta(seconds=phrase_timeout):
+                    phrase_complete = True
 
-    try:
-        with sr.Microphone() as source:
-            print("Listening now: ")
-            audio = recognizer.listen(source, timeout=3)
-            print("Stopped Listening")
-            play_sound("Okay, processing")
-            text = recognizer.recognize_google(audio, show_all=True)
-            print(str(text))
+                phrase_time = now
 
-        alternative_list = text.get('alternative', [])
+                # Combine audio data from queue.
+                audio_data = b''.join(data_queue.queue)
+                data_queue.queue.clear()
 
-        # Iterating to find text with numeric digits
-        selected_text = ""
-        for item in alternative_list:
-            transcript = item.get('transcript', '')
-            if any(char.isdigit() for char in transcript):
-                selected_text = transcript
-                break
+                # Process audio data.
+                audio_np = np.frombuffer(audio_data, dtype=np.int16).astype(np.float32) / 32768.0
+                result = audio_model.transcribe(audio_np, fp16=torch.cuda.is_available())
+                text = result['text'].strip()                        
+                print(text)
 
-        # If no text with numeric digits found, select the first one
-        if selected_text == '' and alternative_list:
-            selected_text = alternative_list[0].get('transcript', '')
+            sleep(0.25)
 
-        selected_text = interpret_command_with_chatgpt(selected_text)
+        except KeyboardInterrupt:
+            break
+        
+        selected_text = interpret_command_with_chatgpt(text)
         print("Selected Text: " + selected_text)
         text_publisher.publish(String(data=selected_text))
         process_voice_command(selected_text)
 
-    except Exception as e:
-        print('Error: ' + str(e))
-        speech_to_text_callback()
 
 def create_text(prompting):
     completion = openai.chat.completions.create(

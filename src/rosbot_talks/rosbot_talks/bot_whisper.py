@@ -6,7 +6,7 @@ from rclpy.duration import Duration
 import re
 import pygame
 import elevenlabs
-from elevenlabs import voices, generate
+from elevenlabs import generate
 import openai
 import speech_recognition as sr
 import math
@@ -14,7 +14,6 @@ import io
 from dotenv import load_dotenv
 import os
 import argparse
-import os
 import numpy as np
 import speech_recognition as sr
 import whisper
@@ -22,7 +21,6 @@ import torch
 from datetime import datetime, timedelta
 from queue import Queue
 from time import sleep
-from sys import platform
 
 load_dotenv()
 api_key = os.getenv("API_KEY")
