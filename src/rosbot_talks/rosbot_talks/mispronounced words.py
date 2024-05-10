@@ -13,13 +13,11 @@ openai.api_key = api_key
 def interpret_command_with_chatgpt(command):
     try:
         prompt_text = f"""Perform the following operations on the provided {command} given by a human that involves direction and distance:
-            Determine the direction as straight, left, right, or stop.
-            Present your response ONLY in the format (direction by distance).
-            If no distance is specified in the command, indicate the distance as 0cm.
-            For directions like about turn, state the angle as 180.
+            You should determine the direction as straight, left, right, or stop ONLY.
+            Present your response ONLY in the format (direction with distance or degrees).
+            If the command is turn around or some synonym, your output should be turn left 360 degrees.
             If the direction is backward, specify the direction as 'straight' with a negative distance.
-            In the case of diagonal movement, the response should be 'turn left 15 degrees and move straight specified units'.
-            If the direction is turn around, the output should be turn left 360 degrees.
+            In command mentions anything like diagonal movement, the response should be 'turn left 15 degrees and move straight specified units'.
             Please make sure to rectify any potential spelling errors or homophone mistakes.
         """
 
@@ -36,7 +34,7 @@ def interpret_command_with_chatgpt(command):
         print(f"An error occurred: {e}")
         return "Error processing command"
 
-sample_command = "Can you turn around?"
+sample_command = "Can you move diagonally 5cm?"
 print(sample_command)
 print(interpret_command_with_chatgpt(sample_command))
 
