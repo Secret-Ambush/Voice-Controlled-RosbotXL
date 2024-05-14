@@ -3,7 +3,7 @@
  <img width=200px height=200px src="https://i.imgur.com/FxL5qM0.jpg" alt="Bot logo"></a>
 </p>
 
-<h3 align="center">Project Title</h3>
+<h3 align="center">Human-Computer Interface</h3>
 
 <div align="center">
 
