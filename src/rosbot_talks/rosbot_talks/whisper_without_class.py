@@ -175,24 +175,42 @@ def process_voice_command(msg):
         distance_to_travel = 0
 
     print(f"Linear Value: {distance_to_travel}")
-
-    if "left" in text:
-        print("Command: Left")
-        turn_by_angle(45, 0.5)
-        move_linear(distance_to_travel, 0.2)
-
-    elif "right" in text:
-        print("Command: Right")
-        turn_by_angle(-45, 0.5)
-        move_linear(distance_to_travel, 0.2)
-
-    elif "straight" in text:
-        print("Command: Straight")
-        move_linear(distance_to_travel, 0.2)
-
-    else:
-        print("Command: Stop")
-        move_linear(0, 0)  
+    
+    patterns = {
+        "left": "turn left",
+        "right": "turn right",
+        "straight": "move straight"
+    }
+    
+    msg = msg.lower()
+    
+    # Find all commands in the message
+    commands = []
+    for key, pattern in patterns.items():
+        if pattern in msg:
+            start_index = msg.index(pattern)
+            commands.append((start_index, key))
+            
+    commands.sort()
+    
+    turn_speed = 0.5
+    move_speed = 0.2
+    
+    for _, command in commands:
+        if command == "left":
+            print("Command: Left")
+            turn_by_angle(45, turn_speed)
+            move_linear(distance_to_travel, move_speed)
+        elif command == "right":
+            print("Command: Right")
+            turn_by_angle(-45, turn_speed)
+            move_linear(distance_to_travel, move_speed)
+        elif command == "straight":
+            print("Command: Straight")
+            move_linear(distance_to_travel, move_speed)
+        else:
+            print("Command: Stop")
+            move_linear(0, 0)  
 
     speech_to_text_callback()
 
