@@ -67,6 +67,7 @@ def interpret_command_with_chatgpt(command):
             Please make sure to rectify any potential spelling errors or homophone mistakes.
         """
 
+        # gpt4o
         completion = openai.chat.completions.create(
         model="gpt-3.5-turbo",
         messages=[
@@ -155,25 +156,68 @@ def process_voice_command(msg):
         distance_to_travel = 0
 
     print(f"Linear Value: {distance_to_travel}")
+    
+    msg = msg.tolower().split()
 
-    if "left" in text:
-        print("Command: Left")
-        print(f"Degrees: {degrees}")
-        turn_by_angle(degrees, 0.5)
-        move_linear(distance_to_travel, 0.2)
+    for word in msg:
+        if "left" in word:
+            print("Command: Left")
+            print(f"Degrees: {degrees}")
+            turn_by_angle(degrees, 0.5)
+            move_linear(distance_to_travel, 0.2)
 
-    if "right" in text:
-        print("Command: Right")
-        turn_by_angle(-degrees, 0.5)
-        move_linear(distance_to_travel, 0.2)
+        if "right" in word:
+            print("Command: Right")
+            turn_by_angle(-degrees, 0.5)
+            move_linear(distance_to_travel, 0.2)
 
-    if "straight" in text:
-        print("Command: Straight")
-        move_linear(distance_to_travel, 0.2)
+        if "straight" in word:
+            print("Command: Straight")
+            move_linear(distance_to_travel, 0.2)
+            
+        if "backward" in word:
+            print("Command: Backward")
+            move_linear(-distance_to_travel, 0.2)
         
-    if "backward" in text:
-        print("Command: Backward")
-        move_linear(-distance_to_travel, 0.2)
+    # ALTERNATE CODE TO HANDLE COMPOUND SENTENCES
+        
+    # patterns = {
+    #     "left": "turn left",
+    #     "right": "turn right",
+    #     "straight": "move straight"
+    # }
+    
+    # msg = msg.lower()
+    
+    # # Find all commands in the message
+    # commands = []
+    # for key, pattern in patterns.items():
+    #     if pattern in msg:
+    #         start_index = msg.index(pattern)
+    #         commands.append((start_index, key))
+            
+    # commands.sort()
+    
+    # turn_speed = 0.5
+    # move_speed = 0.2
+    
+    # for _, command in commands:
+    #     if command == "left":
+    #         print("Command: Left")
+    #         turn_by_angle(45, turn_speed)
+    #         move_linear(distance_to_travel, move_speed)
+    #     elif command == "right":
+    #         print("Command: Right")
+    #         turn_by_angle(-45, turn_speed)
+    #         move_linear(distance_to_travel, move_speed)
+    #     elif command == "straight":
+    #         print("Command: Straight")
+    #         move_linear(distance_to_travel, move_speed)
+    #     else:
+    #         print("Command: Stop")
+    #         move_linear(0, 0)  
+
+    # speech_to_text_callback()
 
     speech_to_text_callback()
 
