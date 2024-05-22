@@ -30,6 +30,7 @@ motion_publisher = None
 text_publisher = None
 node = None
 
+#TTS and playing audio
 def play_sound(text, voice="Bella"):
     pygame.init()
     pygame.mixer.init()
@@ -55,6 +56,7 @@ def play_sound(text, voice="Bella"):
         Correct any potential spelling mistakes or homophone errors.
         """
 
+#interpreting mispronounced words, allow alternate direction synonyms
 def interpret_command_with_chatgpt(command):
     try:
         prompt_text = f"""Perform the following operations on the provided {command} given by a human that involves direction and distance:
