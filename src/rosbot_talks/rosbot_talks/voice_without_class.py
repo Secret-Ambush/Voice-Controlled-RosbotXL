@@ -114,7 +114,7 @@ def speech_to_text_callback():
         if selected_text == '' and alternative_list:
             selected_text = alternative_list[0].get('transcript', '')
 
-        # selected_text = interpret_command_with_chatgpt(selected_text)
+        selected_text = interpret_command_with_chatgpt(selected_text)
         print("Selected Text: " + selected_text)
         msg = String()
         msg.data = selected_text
