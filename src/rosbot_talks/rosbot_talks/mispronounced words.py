@@ -14,7 +14,7 @@ def interpret_command_with_chatgpt(command):
     try:
         prompt_text = f"""Perform the following operations on the provided {command} given by a human that involves direction and distance:
             You should determine the direction as straight, left, right, or stop ONLY.
-            Present your response ONLY in the format (direction with distance or degrees).
+            Output only the corrected command, don't include the previous command {command} in your response.
             If the command is turn around or some synonym, your output should be turn left 360 degrees.
             If the direction is backward, specify the direction as 'straight' with a negative distance.
             In command mentions anything like diagonal movement, the response should be 'turn left 15 degrees and move straight specified units'.
@@ -34,7 +34,7 @@ def interpret_command_with_chatgpt(command):
         print(f"An error occurred: {e}")
         return "Error processing command"
 
-sample_command = "Can you move diagonally 5cm?"
+sample_command = "Can you turn around?"
 print(sample_command)
 print(interpret_command_with_chatgpt(sample_command))
 
