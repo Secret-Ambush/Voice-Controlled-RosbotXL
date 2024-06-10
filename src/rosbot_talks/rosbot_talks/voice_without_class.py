@@ -51,16 +51,17 @@ def interpret_command_with_chatgpt(command):
     try:
         prompt_text = f"""Perform the following operations on the provided {command} given by a human that involves direction and distance:
             You should determine the direction as straight, left, right, or stop ONLY.
-            Output only the corrected command, don't include the previous command {command} in your response.
-            If the command is turn around or some synonym, your output should be turn left 360 degrees.
-            If the direction is backward, specify the direction as 'straight' with a negative distance.
+            Output the corrected command ONLY. No flavour text.
+            If the command is "turn around" or any synonym of it, the output should be "turn left 360 degrees." 
+            However, if the command specifies a direction such as clockwise or anti-clockwise, the output should be "turn right 360 degrees" and "turn left 360 degrees" respectively.
+            If the direction is like backwards, specify the direction as 'straight' and convert the distance to negative.
             In command mentions anything like diagonal movement, the response should be 'turn left 15 degrees and move straight specified units'.
             Please make sure to rectify any potential spelling errors or homophone mistakes.
         """
 
         # gpt4o could be included
         response = openai.ChatCompletion.create(
-            model="gpt-3.5-turbo",
+            model="gpt-4o",
             messages=[
                 {"role": "system", "content": "You are a helpful assistant."},
                 {"role": "user", "content": prompt_text}
@@ -129,8 +130,8 @@ def create_text(prompting):
 def process_voice_command(msg):
     global text_subscriber
     text = str(msg).lower()
-    degrees_match = re.search(r'\b([0-9]+)\s*[dD]?\b', text)
-    digit_match = re.search(r'\s(-?[0-9]+)(?![dD])', text)
+    digit_match = re.search(r'\b(-?[0-9]+)\b(?!\s*(degrees|d|Degrees))', text)
+    degrees_match = re.search(r'\b([0-9]+)\s*(degrees|d|Degrees)?\b', text)
 
     if degrees_match:
         degrees = int(degrees_match.group(1))
@@ -158,14 +159,14 @@ def process_voice_command(msg):
             print("Command: Right")
             turn_by_angle(-degrees, 0.5)
             move_linear(distance_to_travel, 0.2)
+            
+        # if "back" in word:
+        #     print("Command: Straight")
+        #     move_linear(distance_to_travel*-1, 0.2)
 
         if "straight" in word:
             print("Command: Straight")
             move_linear(distance_to_travel, 0.2)
-            
-        if "backward" in word:
-            print("Command: Backward")
-            move_linear(-distance_to_travel, 0.2)
         
     # ALTERNATE CODE TO HANDLE COMPOUND SENTENCES
         
