@@ -130,8 +130,8 @@ def create_text(prompting):
 def process_voice_command(msg):
     global text_subscriber
     text = str(msg).lower()
-    digit_match = re.search(r'\b(-?[0-9]+)\b(?!\s*(degrees|d|Degrees))', text)
-    degrees_match = re.search(r'\b([0-9]+)\s*(degrees|d|Degrees)?\b', text)
+    digit_match = re.search(r'(-?[0-9]+)\b(?!\s*(degrees|d|Degrees))', text)
+    degrees_match = re.search(r'([0-9]+)\s*(degrees|d|Degrees)?\b', text)
 
     if degrees_match:
         degrees = int(degrees_match.group(1))
@@ -147,8 +147,9 @@ def process_voice_command(msg):
     print(f"Linear Value: {distance_to_travel}")
     
     msg = msg.tolower().split()
-
-    for word in msg:
+    
+    words = text.split()
+    for word in words:
         if "left" in word:
             print("Command: Left")
             print(f"Degrees: {degrees}")
