@@ -143,8 +143,6 @@ def process_voice_command(msg):
         distance_to_travel = int(digit_match.group(1))  
     else:
         distance_to_travel = 0
-
-    print(f"Linear Value: {distance_to_travel}")
     
     msg = msg.tolower().split()
     
@@ -160,10 +158,6 @@ def process_voice_command(msg):
             print("Command: Right")
             turn_by_angle(-degrees, 0.5)
             move_linear(distance_to_travel, 0.2)
-            
-        # if "back" in word:
-        #     print("Command: Straight")
-        #     move_linear(distance_to_travel*-1, 0.2)
 
         if "straight" in word:
             print("Command: Straight")

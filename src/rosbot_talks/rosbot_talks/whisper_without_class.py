@@ -56,21 +56,23 @@ def interpret_command_with_chatgpt(command):
     try:
         prompt_text = f"""Perform the following operations on the provided {command} given by a human that involves direction and distance:
             You should determine the direction as straight, left, right, or stop ONLY.
-            Output only the corrected command, don't include the previous command {command} in your response.
-            If the command is turn around or some synonym, your output should be turn left 360 degrees.
-            If the direction is backward, specify the direction as 'straight' with a negative distance.
+            Output the corrected command ONLY. No flavour text.
+            If the command is "turn around" or any synonym of it, the output should be "turn left 360 degrees." 
+            However, if the command specifies a direction such as clockwise or anti-clockwise, the output should be "turn right 360 degrees" and "turn left 360 degrees" respectively.
+            If the direction is like backwards, specify the direction as 'straight' and convert the distance to negative.
             In command mentions anything like diagonal movement, the response should be 'turn left 15 degrees and move straight specified units'.
             Please make sure to rectify any potential spelling errors or homophone mistakes.
         """
+
+        # gpt4o could be included
         response = openai.ChatCompletion.create(
-            model="gpt-3.5-turbo",
+            model="gpt-4o",
             messages=[
                 {"role": "system", "content": "You are a helpful assistant."},
                 {"role": "user", "content": prompt_text}
             ]
         )
         return response['choices'][0]['message']['content'].strip()
-    
     
     except Exception as e:
         print(f"An error occurred: {e}")
@@ -169,51 +171,39 @@ def create_text(prompting):
     play_sound(response)
 
 def process_voice_command(msg):
+    global text_subscriber
     text = str(msg).lower()
-    digit_match = re.search(r'\s([0-9]+)', text)
+    digit_match = re.search(r'(-?[0-9]+)\b(?!\s*(degrees|d|Degrees))', text)
+    degrees_match = re.search(r'([0-9]+)\s*(degrees|d|Degrees)?\b', text)
 
+    if degrees_match:
+        degrees = int(degrees_match.group(1))
+        print(degrees)
+    else:
+        degrees = 45 
+        
     if digit_match:
         distance_to_travel = int(digit_match.group(1))  
     else:
         distance_to_travel = 0
-
-    print(f"Linear Value: {distance_to_travel}")
     
-    patterns = {
-        "left": "turn left",
-        "right": "turn right",
-        "straight": "move straight"
-    }
-    
-    msg = msg.lower()
-    
-    # Find all commands in the message
-    commands = []
-    for key, pattern in patterns.items():
-        if pattern in msg:
-            start_index = msg.index(pattern)
-            commands.append((start_index, key))
-            
-    commands.sort()
-    
-    turn_speed = 0.5
-    move_speed = 0.2
-    
-    for _, command in commands:
-        if command == "left":
+    msg = msg.tolower().split()
+    words = text.split()
+    for word in words:
+        if "left" in word:
             print("Command: Left")
-            turn_by_angle(45, turn_speed)
-            move_linear(distance_to_travel, move_speed)
-        elif command == "right":
+            print(f"Degrees: {degrees}")
+            turn_by_angle(degrees, 0.5)
+            move_linear(distance_to_travel, 0.2)
+
+        if "right" in word:
             print("Command: Right")
-            turn_by_angle(-45, turn_speed)
-            move_linear(distance_to_travel, move_speed)
-        elif command == "straight":
+            turn_by_angle(-degrees, 0.5)
+            move_linear(distance_to_travel, 0.2)
+
+        if "straight" in word:
             print("Command: Straight")
-            move_linear(distance_to_travel, move_speed)
-        else:
-            print("Command: Stop")
-            move_linear(0, 0)  
+            move_linear(distance_to_travel, 0.2)
 
     speech_to_text_callback()
 
