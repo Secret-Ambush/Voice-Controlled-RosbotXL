@@ -16,10 +16,10 @@ setup(
     ],
     install_requires=['setuptools'],
     zip_safe=True,
-    maintainer='somebody very awesome',
-    maintainer_email='user@user.com',
-    description='TODO: Package description',
-    license='TODO: License declaration',
+    maintainer='Riddhi Goswami',
+    maintainer_email='ridhgoswami@gmail.com',
+    description='Voice controlled bot',
+    license='MIT',
     tests_require=['pytest'],
     entry_points={
         'console_scripts': [
