@@ -6,10 +6,6 @@ import os
 load_dotenv()
 api_key = os.getenv("API_KEY_Eleven")
 
-def text_stream():
-   yield "Hi! I'm Brian "
-   yield "I'm an artificial voice made by ElevenLabs "
-
 elevenlabs.set_api_key(api_key)
 audio = generate(
    text="Hello there!",
