@@ -1,19 +1,12 @@
-import openai
-import os
-from dotenv import load_dotenv
+import json
+from llamaapi import LlamaAPI
 import re
 
-load_dotenv()
+# Initialize the SDK
+llama = LlamaAPI("LA-18ef5c088a3a42e388278a5de3d984cc8e92d4ef24a2408eaed82da6b9126d14")
 
-api_key = os.getenv("API_KEY")
-if not api_key:
-    raise ValueError("API_KEY environment variable not set.")
-
-openai.api_key = api_key
-
-def interpret_command_with_chatgpt(command):
-    try:
-        prompt_text = f"""Perform the following operations on the provided {command} given by a human that involves direction and distance:
+command = "Can you move turn left 45 degrees and then move backwards 10 units?"
+prompt_text = f"""Perform the following operations on the provided {command} given by a human that involves direction and distance:
             You should determine the direction as straight, left, right, or stop ONLY.
             Output the corrected command ONLY. No flavour text.
             If the command is "turn around" or any synonym of it, the output should be "turn left 360 degrees." 
@@ -22,27 +15,23 @@ def interpret_command_with_chatgpt(command):
             In command mentions anything like diagonal movement, the response should be 'turn left 15 degrees and move straight specified units'.
             Please make sure to rectify any potential spelling errors or homophone mistakes.
         """
+        
+# Build the API request
+api_request_json = {
+    "model": "llama3-8b",
+    "messages": [
+        {"role": "user", "content": prompt_text},
+    ]
+}
 
-        response = openai.ChatCompletion.create(
-            model="gpt-4o",
-            messages=[
-                {"role": "system", "content": "You are a helpful assistant."},
-                {"role": "user", "content": prompt_text}
-            ]
-        )
+# Execute the Request
+response = llama.run(api_request_json)
+final = json.dumps(response.json(), indent=2)
 
-        return response['choices'][0]['message']['content'].strip()
-    except Exception as e:
-        print(f"An error occurred: {e}")
-        return "Error processing command"
-
-sample_command = "Can you move turn left 45 degrees and then move backwards 10 units?"
-print(sample_command)
-final = interpret_command_with_chatgpt(sample_command)
 print(final)
 
 text = str(final).lower()
-digit_match = re.search(r'(-?[0-9]+)\b(?!\s*(degrees|d|Degrees))', text)
+digit_match = re.search(r'\b(-?[0-9]+)\b(?!\s*(degrees|d|Degrees))', text)
 degrees_match = re.search(r'\b([0-9]+)\s*(degrees|d|Degrees)?\b', text)
 
 if degrees_match:
