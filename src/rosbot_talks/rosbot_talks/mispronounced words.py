@@ -20,6 +20,7 @@ def interpret_command_with_chatgpt(command):
             However, if the command specifies a direction such as clockwise or anti-clockwise, the output should be "turn right 360 degrees" and "turn left 360 degrees" respectively.
             If the direction is like backwards, specify the direction as 'straight' and convert the distance to negative.
             In command mentions anything like diagonal movement, the response should be 'turn left 15 degrees and move straight specified units'.
+            Additionally, if there is no degrees or distance mentioned, consider it as 0.
             Please make sure to rectify any potential spelling errors or homophone mistakes.
         """
 
@@ -36,7 +37,7 @@ def interpret_command_with_chatgpt(command):
         print(f"An error occurred: {e}")
         return "Error processing command"
 
-sample_command = "Hey do you think you could turn left 45 degrees and then move backwards 10 units?"
+sample_command = "Hey do you think you could move backwards 10 units?"
 print(sample_command)
 final = interpret_command_with_chatgpt(sample_command)
 print(final)
@@ -46,12 +47,12 @@ digit_match = re.search(r'(-?[0-9]+)\b(?!\s*(degrees|d|Degrees))', text)
 degrees_match = re.search(r'\b([0-9]+)\s*(degrees|d|Degrees)?\b', text)
 
 if degrees_match:
-    degrees = int(degrees_match.group(1))
+    degrees = int(degrees_match.group(0))
 else:
     degrees = 45 
     
 if digit_match:
-        distance_to_travel = int(digit_match.group(1))
+        distance_to_travel = int(digit_match.group(0))
 else:
     distance_to_travel = 0
     
