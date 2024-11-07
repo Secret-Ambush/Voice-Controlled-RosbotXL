@@ -36,7 +36,7 @@ def interpret_command_with_chatgpt(command):
         print(f"An error occurred: {e}")
         return "Error processing command"
 
-sample_command = "Can you move turn left 45 degrees and then move backwards 10 units?"
+sample_command = "Hey do you think you could turn left 45 degrees and then move backwards 10 units?"
 print(sample_command)
 final = interpret_command_with_chatgpt(sample_command)
 print(final)
