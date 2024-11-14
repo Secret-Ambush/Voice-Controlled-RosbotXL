@@ -8,7 +8,7 @@ pipe = pipeline(
     torch_dtype=torch.bfloat16,
 )
 
-messages = [{"role": "user", "content": "What are quantum computers?"}]
+messages = [{"role": "user", "content": "Hello there! How are you today?"}]
 outputs = pipe(messages, max_new_tokens=150)
 response = outputs[0]["generated_text"]
 print(response)
