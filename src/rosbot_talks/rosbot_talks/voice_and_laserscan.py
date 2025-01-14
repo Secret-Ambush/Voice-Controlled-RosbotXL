@@ -165,11 +165,18 @@ def process_voice_command(msg):
         if "left" in word:
             print("Command: Left")
             print(f"Degrees: {degrees}")
+            if not check_rotation_space():
+                play_sound("There is not enough space to rotate.")
+                break
             turn_by_angle(degrees, 0.5)
             move_linear(distance_to_travel, 0.2)
 
         if "right" in word:
             print("Command: Right")
+            print(f"Degrees: {degrees}")
+            if not check_rotation_space():
+                play_sound("There is not enough space to rotate.")
+                break
             turn_by_angle(-degrees, 0.5)
             move_linear(distance_to_travel, 0.2)
 
@@ -182,14 +189,30 @@ def process_voice_command(msg):
 def check_lidar_data(distance):
     global lidar_data
     if lidar_data is None:
-        play_sound("No LiDAR data available.")
+        print("No LiDAR data available.")
         return False
 
     # Assume lidar_data is a LaserScan message with ranges attribute
     min_distance = min(lidar_data.ranges)
     if min_distance < distance / 100.0:  # Convert distance to meters
-        play_sound(f"Obstacle detected at {min_distance} meters, which is less than {distance / 100.0} meters.")
+        print(f"Obstacle detected at {min_distance} meters, which is less than {distance / 100.0} meters.")
         return False
+
+    return True
+
+def check_rotation_space():
+    global lidar_data
+    if lidar_data is None:
+        print("No LiDAR data available for rotation check.")
+        return False
+
+    # Check if there is enough space in a 360-degree range for rotation
+    safe_distance = 0.5  # Minimum distance required for rotation in meters
+    for i, distance in enumerate(lidar_data.ranges):
+        if distance < safe_distance:
+            angle = i * lidar_data.angle_increment
+            print(f"Obstacle detected at angle {math.degrees(angle)} degrees with distance {distance} meters.")
+            return False
 
     return True
 
