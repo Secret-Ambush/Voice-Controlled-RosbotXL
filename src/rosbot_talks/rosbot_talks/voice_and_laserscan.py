@@ -2,6 +2,7 @@ import rclpy
 from rclpy.node import Node
 from std_msgs.msg import String
 from geometry_msgs.msg import Twist
+from sensor_msgs.msg import LaserScan
 from rclpy.duration import Duration
 import re
 import pygame
@@ -20,6 +21,7 @@ from time import sleep
 load_dotenv()
 api_key = os.getenv("API_KEY")
 api_key2 = os.getenv("API_KEY_Eleven")
+
 elevenlabs.set_api_key(api_key2)
 openai.api_key = api_key
 
@@ -28,12 +30,13 @@ flag = True
 motion_publisher = None
 text_publisher = None
 node = None
+lidar_data = None
 
-#TTS and playing audio
+# TTS and playing audio
 def play_sound(message):
     pygame.init()
     pygame.mixer.init()
-    
+
     try:
         audio = elevenlabs.generate(
             text=message,
@@ -44,16 +47,16 @@ def play_sound(message):
         sound.play()
         while pygame.mixer.get_busy():
             pygame.time.Clock().tick(10)
-            
+
     except pygame.error as e:
         print("Cannot play the audio:", e)
-        
+
     finally:
         pygame.mixer.quit()
         pygame.quit()
 
-#interpreting mispronounced words, allow alternate direction synonyms
 def interpret_command_with_chatgpt(command):
+    """Use GPT to interpret and correct a voice command."""
     prompt_text = f"""Perform the following operations on the provided {command} given by a human that involves direction and distance:
         You should determine the direction as straight, left, right, or stop ONLY.
         Output the corrected command ONLY. No flavour text.
@@ -64,7 +67,6 @@ def interpret_command_with_chatgpt(command):
         Please make sure to rectify any potential spelling errors or homophone mistakes.
     """
     try:
-        # gpt4o could be included
         response = openai.ChatCompletion.create(
             model="gpt-4o",
             messages=[
@@ -73,9 +75,8 @@ def interpret_command_with_chatgpt(command):
             ]
         )
         return response['choices'][0]['message']['content'].strip()
-    
     except Exception as e:
-        print(f"An error occurred: {e}")
+        print(f"Error with OpenAI: {e}")
         return "Error processing command"
 
 def speech_to_text_callback():
@@ -115,22 +116,26 @@ def speech_to_text_callback():
         print("Selected Text: " + selected_text)
         msg = String()
         msg.data = selected_text
-        text_publisher.publish(msg)        
+        text_publisher.publish(msg)
 
     except Exception as e:
         print('Error: ' + str(e))
         speech_to_text_callback()
 
-def create_text(prompting):
-    completion = openai.chat.completions.create(
-        model="gpt-4o-mini",
-        messages=[
-            {"role": "system", "content": "You are a bot."},
-            {"role": "user", "content": prompting}
-        ]
-    )
-    response = completion.choices[0].message.content
-    play_sound(response)
+def create_text(prompt):
+    """Generate textual responses using GPT."""
+    try:
+        completion = openai.ChatCompletion.create(
+            model="gpt-4o-mini",
+            messages=[
+                {"role": "system", "content": "You are a bot."},
+                {"role": "user", "content": prompt}
+            ]
+        )
+        return completion.choices[0].message.content
+    except Exception as e:
+        print(f"Error with OpenAI: {e}")
+        return "Error generating response"
 
 def process_voice_command(msg):
     global text_subscriber
@@ -143,14 +148,18 @@ def process_voice_command(msg):
         print(degrees)
     else:
         degrees = 45 
-        
+
     if digit_match:
         distance_to_travel = int(digit_match.group(1))  
     else:
         distance_to_travel = 0
-    
+
+    if not check_lidar_data(distance_to_travel):
+        play_sound("There is an obstacle in the way. Movement cannot be completed.")
+        return
+
     msg = msg.tolower().split()
-    
+
     words = text.split()
     for word in words:
         if "left" in word:
@@ -169,6 +178,24 @@ def process_voice_command(msg):
             move_linear(distance_to_travel, 0.2)
 
     speech_to_text_callback()
+
+def check_lidar_data(distance):
+    global lidar_data
+    if lidar_data is None:
+        print("No LiDAR data available.")
+        return False
+
+    # Assume lidar_data is a LaserScan message with ranges attribute
+    min_distance = min(lidar_data.ranges)
+    if min_distance < distance / 100.0:  # Convert distance to meters
+        print(f"Obstacle detected at {min_distance} meters, which is less than {distance / 100.0} meters.")
+        return False
+
+    return True
+
+def lidar_callback(msg):
+    global lidar_data
+    lidar_data = msg
 
 def turn_by_angle(angle_degrees, angular_velocity):
     global motion_publisher, node
@@ -216,11 +243,12 @@ def move_linear(distance_cm, linear_velocity):
 def main(args=None):
     global text_publisher, motion_publisher, text_subscriber, node
     rclpy.init(args=args)
-    node = Node('speech_to_text_node')
+    node = Node('voice_control_node')
     text_publisher = node.create_publisher(String,'/recognized_text',1)  # Publishing text
     qos_profile = QoSProfile(depth=10)
     text_subscriber = node.create_subscription(String, '/recognized_text', process_voice_command, qos_profile) # custom topic
-    motion_publisher = node.create_publisher( Twist, '/cmd_vel', 1)  # Publishing movement commands to this topic
+    lidar_subscriber = node.create_subscription(LaserScan, '/scan', lidar_callback, qos_profile)  # LiDAR topic
+    motion_publisher = node.create_publisher(Twist, '/cmd_vel', 1)  # Publishing movement commands to this topic
     speech_to_text_callback()
 
     rclpy.spin(node)
