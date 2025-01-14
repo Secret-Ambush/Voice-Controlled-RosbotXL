@@ -182,13 +182,13 @@ def process_voice_command(msg):
 def check_lidar_data(distance):
     global lidar_data
     if lidar_data is None:
-        print("No LiDAR data available.")
+        play_sound("No LiDAR data available.")
         return False
 
     # Assume lidar_data is a LaserScan message with ranges attribute
     min_distance = min(lidar_data.ranges)
     if min_distance < distance / 100.0:  # Convert distance to meters
-        print(f"Obstacle detected at {min_distance} meters, which is less than {distance / 100.0} meters.")
+        play_sound(f"Obstacle detected at {min_distance} meters, which is less than {distance / 100.0} meters.")
         return False
 
     return True
